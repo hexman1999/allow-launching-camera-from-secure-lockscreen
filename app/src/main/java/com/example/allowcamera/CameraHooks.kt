@@ -1,6 +1,7 @@
 package com.example.allowcamera
 
 import android.content.Intent
+import android.provider.MediaStore
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 
@@ -19,7 +20,7 @@ object CameraHooks {
     }
 
     fun hook(module: XposedModule, param: PackageReadyParam) {
-        val target = getTargetPackage(module) ?: return
+        val target = getTargetPackage(module)
         val cl = param.classLoader
 
         hookResolveCameraIntent(module, cl, "com.android.systemui.statusbar.KeyguardBottomAreaView", target)
@@ -28,7 +29,7 @@ object CameraHooks {
         hookResolveCameraIntent(module, cl, "com.android.systemui.keyguard.KeyguardBottomAreaView", target)
     }
 
-    private fun hookResolveCameraIntent(module: XposedModule, classLoader: ClassLoader, className: String, targetPackage: String) {
+    private fun hookResolveCameraIntent(module: XposedModule, classLoader: ClassLoader, className: String, targetPackage: String?) {
         try {
             val clazz = Class.forName(className, false, classLoader)
             val method = clazz.getDeclaredMethod("resolveCameraIntent")
@@ -36,7 +37,10 @@ object CameraHooks {
             module.hook(method).intercept { chain ->
                 val intent = chain.proceed() as? Intent
                 if (intent != null) {
-                    intent.setPackage(targetPackage)
+                    if (targetPackage != null) {
+                        intent.setPackage(targetPackage)
+                    }
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 }
                 intent
             }

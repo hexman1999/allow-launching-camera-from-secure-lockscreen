@@ -11,6 +11,7 @@ import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import java.util.TreeSet
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,29 +41,50 @@ class SettingsActivity : AppCompatActivity() {
 
         listView.setOnItemClickListener { _, _, position, _ ->
             val selected = cameraApps[position]
-            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_PACKAGE, selected.packageName)
-                .apply()
-            statusText.text = getString(R.string.selected_camera, selected.label)
-            Toast.makeText(this, getString(R.string.restart_systemui), Toast.LENGTH_LONG).show()
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (currentPkg == selected.packageName) {
+                prefs.edit().remove(KEY_PACKAGE).apply()
+                listView.setItemChecked(position, false)
+                statusText.text = getString(R.string.no_app_selected)
+                Toast.makeText(this, getString(R.string.using_default), Toast.LENGTH_SHORT).show()
+            } else {
+                prefs.edit().putString(KEY_PACKAGE, selected.packageName).apply()
+                statusText.text = getString(R.string.selected_camera, selected.label)
+                Toast.makeText(this, getString(R.string.restart_systemui), Toast.LENGTH_LONG).show()
+            }
         }
     }
 
     private fun getCameraApps(): List<CameraAppInfo> {
-        val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-        val activities: List<android.content.pm.ResolveInfo> =
-            packageManager.queryIntentActivities(intent, 0)
+        val seen = TreeSet<String>()
+        val result = mutableListOf<CameraAppInfo>()
+        val pm = packageManager
 
-        return activities.mapNotNull { ri ->
-            val ai = ri.activityInfo ?: return@mapNotNull null
-            val appInfo = ai.applicationInfo
-            CameraAppInfo(
-                label = appInfo.loadLabel(packageManager).toString(),
-                packageName = appInfo.packageName,
-                icon = appInfo.loadIcon(packageManager)
-            )
-        }.sortedBy { it.label }
+        val intents = listOf(
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA),
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA_SECURE),
+            Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        )
+
+        for (intent in intents) {
+            val activities = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+            for (ri in activities) {
+                val ai = ri.activityInfo ?: continue
+                val pkg = ai.packageName
+                if (pkg in seen) continue
+                seen.add(pkg)
+                val appInfo = ai.applicationInfo
+                result.add(
+                    CameraAppInfo(
+                        label = appInfo.loadLabel(pm).toString(),
+                        packageName = pkg,
+                        icon = appInfo.loadIcon(pm)
+                    )
+                )
+            }
+        }
+
+        return result.sortedBy { it.label }
     }
 
     companion object {
