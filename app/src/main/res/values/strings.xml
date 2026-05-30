@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Allow Camera</string>
+    <string name="xposed_description">Launch selected third-party camera from secure lockscreen without unlocking</string>
+    <string name="select_camera">Select Camera App</string>
+    <string name="select_camera_hint">Choose which camera app opens when you swipe the lockscreen camera icon</string>
+    <string name="no_app_selected">No camera selected</string>
+    <string name="no_camera_apps_found">No camera apps found. Install a camera app first.</string>
+    <string name="selected_camera">Selected: %s</string>
+    <string name="restart_systemui">Restart SystemUI or reboot for changes to take effect</string>
+</resources>
