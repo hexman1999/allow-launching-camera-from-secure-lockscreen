@@ -4,7 +4,7 @@
     <string name="xposed_description">Launch any camera from secure lockscreen without unlocking</string>
     <string name="select_camera">Camera Setup</string>
     <string name="select_camera_hint">No selection = system default. If you select a camera app, you must also scope this module to that app in LSPosed for it to show when locked.</string>
-    <string name="manual_label">Manual entry (if app isn't listed)</string>
+    <string name="manual_label">Manual entry (if app is not listed)</string>
     <string name="manual_hint">com.example.camera</string>
     <string name="save_btn">Save</string>
     <string name="detected_label">Detected camera apps</string>
