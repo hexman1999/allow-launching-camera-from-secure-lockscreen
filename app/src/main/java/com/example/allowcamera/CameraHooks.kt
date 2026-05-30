@@ -1,22 +1,16 @@
 package com.example.allowcamera
 
 import android.content.Intent
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XSharedPreferences
-import de.robv.android.xposed.XposedHelpers.findAndHookMethod
-import de.robv.android.xposed.XposedHelpers.findClass
-import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam
+import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 
 object CameraHooks {
     private const val PREFS_NAME = "camera_prefs"
     private const val KEY_PACKAGE = "selected_camera_package"
-    private const val MODULE_PKG = "com.example.allowcamera"
 
-    private fun getTargetPackage(): String? {
+    private fun getTargetPackage(module: XposedModule): String? {
         return try {
-            val prefs = XSharedPreferences(MODULE_PKG, PREFS_NAME)
-            prefs.makeWorldReadable()
-            prefs.reload()
+            val prefs = module.getRemotePreferences(PREFS_NAME)
             val pkg = prefs.getString(KEY_PACKAGE, null)
             if (pkg.isNullOrBlank()) null else pkg
         } catch (_: Throwable) {
@@ -24,28 +18,28 @@ object CameraHooks {
         }
     }
 
-    fun hook(lpparam: LoadPackageParam) {
-        val target = getTargetPackage() ?: return
-        val cl = lpparam.classLoader
+    fun hook(module: XposedModule, param: PackageReadyParam) {
+        val target = getTargetPackage(module) ?: return
+        val cl = param.classLoader
 
-        // Android 10-13: SystemUI KeyguardBottomAreaView
-        hookResolveCameraIntent(cl, "com.android.systemui.statusbar.KeyguardBottomAreaView", target)
-        hookResolveCameraIntent(cl, "com.android.systemui.statusbar.phone.KeyguardBottomAreaView", target)
-
-        // Android 12+: KeyguardCameraMediator
-        hookResolveCameraIntent(cl, "com.android.systemui.keyguard.KeyguardCameraMediator", target)
-        hookResolveCameraIntent(cl, "com.android.systemui.keyguard.KeyguardBottomAreaView", target)
+        hookResolveCameraIntent(module, cl, "com.android.systemui.statusbar.KeyguardBottomAreaView", target)
+        hookResolveCameraIntent(module, cl, "com.android.systemui.statusbar.phone.KeyguardBottomAreaView", target)
+        hookResolveCameraIntent(module, cl, "com.android.systemui.keyguard.KeyguardCameraMediator", target)
+        hookResolveCameraIntent(module, cl, "com.android.systemui.keyguard.KeyguardBottomAreaView", target)
     }
 
-    private fun hookResolveCameraIntent(classLoader: ClassLoader, className: String, targetPackage: String) {
+    private fun hookResolveCameraIntent(module: XposedModule, classLoader: ClassLoader, className: String, targetPackage: String) {
         try {
-            val clazz = findClass(className, classLoader)
-            findAndHookMethod(clazz, "resolveCameraIntent", object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    val intent = param.result as? Intent ?: return
+            val clazz = Class.forName(className, false, classLoader)
+            val method = clazz.getDeclaredMethod("resolveCameraIntent")
+            method.isAccessible = true
+            module.hook(method).intercept { chain ->
+                val intent = chain.proceed() as? Intent
+                if (intent != null) {
                     intent.setPackage(targetPackage)
                 }
-            })
+                intent
+            }
         } catch (_: Throwable) { }
     }
 }
