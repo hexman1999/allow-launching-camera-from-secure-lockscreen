@@ -8,7 +8,7 @@
     <string name="manual_hint">com.example.camera</string>
     <string name="save_btn">Save</string>
     <string name="detected_label">Detected camera apps</string>
-    <string name="no_app_selected">No app selected — lockscreen camera will use system default</string>
+    <string name="no_app_selected">No app selected - lockscreen camera will use system default</string>
     <string name="no_camera_apps_found">No camera apps detected. Enter the package name manually above.</string>
     <string name="selected_camera">Redirecting to: %s</string>
     <string name="using_default">Using system default camera</string>

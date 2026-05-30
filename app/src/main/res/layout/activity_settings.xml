@@ -42,9 +42,7 @@
             android:layout_weight="1"
             android:hint="@string/manual_hint"
             android:inputType="text"
-            android:autofillHints=""
-            android:padding="8dp"
-            android:background="@android:drawable/editbox_background" />
+            android:padding="8dp" />
 
         <Button
             android:id="@+id/manual_btn"
