@@ -6,7 +6,10 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.MediaStore
+import android.text.TextUtils
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
@@ -20,11 +23,12 @@ class SettingsActivity : AppCompatActivity() {
 
         val listView = findViewById<ListView>(R.id.camera_app_list)
         val statusText = findViewById<TextView>(R.id.status_text)
+        val manualInput = findViewById<EditText>(R.id.manual_package)
+        val manualBtn = findViewById<Button>(R.id.manual_btn)
         val cameraApps = getCameraApps()
 
         if (cameraApps.isEmpty()) {
             statusText.text = getString(R.string.no_camera_apps_found)
-            return
         }
 
         val adapter = CameraAppAdapter(this, cameraApps)
@@ -37,6 +41,9 @@ class SettingsActivity : AppCompatActivity() {
         if (currentIndex >= 0) {
             listView.setItemChecked(currentIndex, true)
             statusText.text = getString(R.string.selected_camera, cameraApps[currentIndex].label)
+        } else if (currentPkg != null) {
+            manualInput.setText(currentPkg)
+            statusText.text = getString(R.string.selected_camera, currentPkg)
         }
 
         listView.setOnItemClickListener { _, _, position, _ ->
@@ -50,8 +57,38 @@ class SettingsActivity : AppCompatActivity() {
             } else {
                 prefs.edit().putString(KEY_PACKAGE, selected.packageName).apply()
                 statusText.text = getString(R.string.selected_camera, selected.label)
-                Toast.makeText(this, getString(R.string.restart_systemui), Toast.LENGTH_LONG).show()
+                Toast.makeText(this, getString(R.string.restart_camera), Toast.LENGTH_LONG).show()
             }
+        }
+
+        manualBtn.setOnClickListener {
+            val pkg = manualInput.text.toString().trim()
+            if (pkg.isEmpty()) {
+                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit().remove(KEY_PACKAGE).apply()
+                listView.clearChoices()
+                adapter.notifyDataSetChanged()
+                statusText.text = getString(R.string.no_app_selected)
+                Toast.makeText(this, getString(R.string.using_default), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (!isPackageInstalled(pkg)) {
+                Toast.makeText(this, getString(R.string.package_not_found, pkg), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(KEY_PACKAGE, pkg).apply()
+            statusText.text = getString(R.string.selected_camera, pkg)
+            Toast.makeText(this, getString(R.string.restart_camera), Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun isPackageInstalled(pkg: String): Boolean {
+        return try {
+            packageManager.getApplicationInfo(pkg, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
         }
     }
 
@@ -73,12 +110,11 @@ class SettingsActivity : AppCompatActivity() {
                 val pkg = ai.packageName
                 if (pkg in seen) continue
                 seen.add(pkg)
-                val appInfo = ai.applicationInfo
                 result.add(
                     CameraAppInfo(
-                        label = appInfo.loadLabel(pm).toString(),
+                        label = ai.applicationInfo.loadLabel(pm).toString(),
                         packageName = pkg,
-                        icon = appInfo.loadIcon(pm)
+                        icon = ai.applicationInfo.loadIcon(pm)
                     )
                 )
             }

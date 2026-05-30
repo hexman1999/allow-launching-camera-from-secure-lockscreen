@@ -2,19 +2,25 @@ package com.example.allowcamera
 
 import android.util.Log
 import io.github.libxposed.api.XposedModule
-import io.github.libxposed.api.XposedModuleInterface.PackageLoadedParam
+import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 
 class AllowCameraModule : XposedModule() {
-    override fun onPackageLoaded(param: PackageLoadedParam) {
-        if (param.packageName != "com.android.systemui") return
-        Log.d(TAG, "SystemUI loaded, waiting for package ready")
+    override fun onModuleLoaded(param: ModuleLoadedParam) {
+        Log.d(TAG, "module loaded, process=${param.processName}")
     }
 
     override fun onPackageReady(param: PackageReadyParam) {
-        if (param.packageName != "com.android.systemui") return
-        Log.d(TAG, "SystemUI ready, applying hooks")
-        CameraHooks.hook(this, param)
+        when (param.packageName) {
+            "com.android.systemui" -> {
+                Log.d(TAG, "SystemUI ready — applying camera shortcut hook")
+                CameraHooks.hookSystemUi(this, param)
+            }
+            else -> {
+                Log.d(TAG, "camera app ready (${param.packageName}) — applying window-flag hook")
+                CameraHooks.hookCameraApp(this, param)
+            }
+        }
     }
 
     companion object {

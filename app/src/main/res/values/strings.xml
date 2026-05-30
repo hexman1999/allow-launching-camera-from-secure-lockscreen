@@ -2,11 +2,16 @@
 <resources>
     <string name="app_name">Allow Camera</string>
     <string name="xposed_description">Launch any camera from secure lockscreen without unlocking</string>
-    <string name="select_camera">Camera Apps</string>
-    <string name="select_camera_hint">Tap a camera to redirect the lockscreen shortcut to it, or tap again to use the system default</string>
+    <string name="select_camera">Camera Setup</string>
+    <string name="select_camera_hint">No selection = system default. If you select a camera app, you must also scope this module to that app in LSPosed for it to show when locked.</string>
+    <string name="manual_label">Manual entry (if app isn't listed)</string>
+    <string name="manual_hint">com.example.camera</string>
+    <string name="save_btn">Save</string>
+    <string name="detected_label">Detected camera apps</string>
     <string name="no_app_selected">No app selected — lockscreen camera will use system default</string>
-    <string name="no_camera_apps_found">No camera apps found.</string>
+    <string name="no_camera_apps_found">No camera apps detected. Enter the package name manually above.</string>
     <string name="selected_camera">Redirecting to: %s</string>
     <string name="using_default">Using system default camera</string>
-    <string name="restart_systemui">Restart SystemUI or reboot for changes to take effect</string>
+    <string name="package_not_found">Package %s is not installed</string>
+    <string name="restart_camera">Scope this module to the camera app in LSPosed, then restart or reboot</string>
 </resources>
